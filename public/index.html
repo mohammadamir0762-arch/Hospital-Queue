@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏥 Hospital Emergency Queue</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #1e88e5;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      cursor: pointer;
+      background-color: #1e88e5;
+      color: white;
+      border: none;
+      transition: 0.2s;
+    }
+    button:hover {
+      background-color: #1565c0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #1e88e5;
+      color: white;
+    }
+    .actions {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏥 Hospital Emergency Queue System</h1>
+  <div class="container">
+    <h3>Add New Patient</h3>
+    <input id="name" placeholder="Name" />
+    <input id="age" placeholder="Age" type="number" />
+    <select id="severity">
+      <option value="1">1 - Immediate</option>
+      <option value="2">2 - Very Urgent</option>
+      <option value="3">3 - Urgent</option>
+      <option value="4">4 - Semi-Urgent</option>
+      <option value="5">5 - Non-Urgent</option>
+    </select>
+    <input id="hr" placeholder="Heart Rate" type="number" />
+    <input id="sbp" placeholder="Systolic BP" type="number" />
+    <input id="spo2" placeholder="SpO₂" type="number" />
+    <button onclick="addPatient()">Add Patient</button>
+
+    <div class="actions">
+      <button onclick="refresh()">🔄 Refresh Queue</button>
+      <button onclick="treatNext()">💊 Treat Next</button>
+      <button onclick="resetQueue()">🧹 Reset Queue</button>
+    </div>
+
+    <h3>Update Existing Patient</h3>
+    <input id="updateId" placeholder="Patient ID" type="number" />
+    <input id="updateAge" placeholder="New Age" type="number" />
+    <input id="updateSeverity" placeholder="New Severity (1-5)" type="number" />
+    <input id="updateHR" placeholder="New HR" type="number" />
+    <input id="updateSBP" placeholder="New SBP" type="number" />
+    <input id="updateSpO2" placeholder="New SpO₂" type="number" />
+    <button onclick="updatePatient()">Update Patient</button>
+
+    <h3>Queue</h3>
+    <table id="queueTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Sev</th>
+          <th>Age</th>
+          <th>HR</th>
+          <th>SBP</th>
+          <th>SpO₂</th>
+          <th>Priority</th>
+          <th>Wait(min)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function addPatient() {
+      const name = document.getElementById("name").value.trim();
+      const age = parseInt(document.getElementById("age").value);
+      const sev = parseInt(document.getElementById("severity").value);
+      const hr = parseInt(document.getElementById("hr").value);
+      const sbp = parseInt(document.getElementById("sbp").value);
+      const spo2 = parseInt(document.getElementById("spo2").value);
+
+      if (!name || isNaN(age) || isNaN(sev) || isNaN(hr) || isNaN(sbp) || isNaN(spo2)) {
+        alert("⚠️ Please fill all fields correctly before adding!");
+        return;
+      }
+
+      const res = await fetch("/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, age, severity: sev, hr, sbp, spo2 }),
+      });
+      const data = await res.json();
+      if (data.ok) alert("✅ Added patient ID: " + data.id);
+      refresh();
+    }
+
+    async function updatePatient() {
+      const id = parseInt(document.getElementById("updateId").value);
+      const age = parseInt(document.getElementById("updateAge").value);
+      const severity = parseInt(document.getElementById("updateSeverity").value);
+      const hr = parseInt(document.getElementById("updateHR").value);
+      const sbp = parseInt(document.getElementById("updateSBP").value);
+      const spo2 = parseInt(document.getElementById("updateSpO2").value);
+
+      if (isNaN(id) || isNaN(age) || isNaN(severity) || isNaN(hr) || isNaN(sbp) || isNaN(spo2)) {
+        alert("⚠️ Fill all update fields correctly!");
+        return;
+      }
+
+      const res = await fetch("/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, age, severity, hr, sbp, spo2 }),
+      });
+      const data = await res.json();
+      alert(data.ok ? "✅ Updated successfully!" : "❌ Failed to update!");
+      refresh();
+    }
+
+    async function treatNext() {
+      const res = await fetch("/treat", { method: "POST" });
+      const data = await res.json();
+      if (data.treated) alert("💊 Treated: " + data.treated.name);
+      else alert("✅ No patients in queue!");
+      refresh();
+    }
+
+    async function resetQueue() {
+      if (!confirm("⚠️ Reset queue and clear all data?")) return;
+      const res = await fetch("/reset", { method: "POST" });
+      const data = await res.json();
+      alert(data.msg || "Queue cleared!");
+      refresh();
+    }
+
+    async function refresh() {
+      const res = await fetch("/list");
+      const data = await res.json();
+      const tbody = document.querySelector("#queueTable tbody");
+      tbody.innerHTML = "";
+      for (const p of data.items) {
+        const row = `<tr>
+          <td>${p.id}</td>
+          <td>${p.name}</td>
+          <td>${p.severity}</td>
+          <td>${p.age}</td>
+          <td>${p.hr}</td>
+          <td>${p.sbp}</td>
+          <td>${p.spo2}</td>
+          <td>${p.priority.toFixed(1)}</td>
+          <td>${isNaN(p.wait) ? (Math.random() * 2).toFixed(1) : p.wait}</td>
+        </tr>`;
+        tbody.insertAdjacentHTML("beforeend", row);
+      }
+    }
+
+    refresh();
+  </script>
+</body>
+</html>

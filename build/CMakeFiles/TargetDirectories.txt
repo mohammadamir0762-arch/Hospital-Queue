@@ -1,0 +1,3 @@
+/Users/mohammadamir/Desktop/coding/hospital-queue-web/build/CMakeFiles/server.dir
+/Users/mohammadamir/Desktop/coding/hospital-queue-web/build/CMakeFiles/edit_cache.dir
+/Users/mohammadamir/Desktop/coding/hospital-queue-web/build/CMakeFiles/rebuild_cache.dir
